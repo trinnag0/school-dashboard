@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Easily switchable to "postgresql"
+  url      = "file:./dev.db"
+}
+
+// Enum Role removed for SQLite compatibility. Use string values instead.
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("TEACHER")
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacherLectures    Lecture[]           @relation("TeacherLectures")
+  attendanceRecords  AttendanceRecord[]  @relation("TeacherAttendance")
+  students           Student[]           @relation("GuardianStudents")
+  managedBudgets     Budget[]            @relation("BudgetManager")
+}
+
+model Student {
+  id         Int      @id @default(autoincrement())
+  name       String
+  enrollment String   @unique
+  grade      String
+  createdAt  DateTime @default(now())
+  
+  guardianId Int
+  guardian   User     @relation("GuardianStudents", fields: [guardianId], references: [id])
+
+  attendance AttendanceRecord[]
+  fees       Fee[]
+}
+
+model Subject {
+  id          Int       @id @default(autoincrement())
+  name        String
+  code        String    @unique
+  department  String
+  
+  lectures    Lecture[]
+}
+
+model ClassGroup {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique // e.g., Grade 10A
+  
+  lectures Lecture[]
+}
+
+model Lecture {
+  id           Int        @id @default(autoincrement())
+  date         DateTime
+  startTime    DateTime
+  endTime      DateTime
+
+  teacherId    Int
+  teacher      User       @relation("TeacherLectures", fields: [teacherId], references: [id])
+
+  subjectId    Int
+  subject      Subject    @relation(fields: [subjectId], references: [id])
+
+  classGroupId Int
+  classGroup   ClassGroup @relation(fields: [classGroupId], references: [id])
+
+  attendance   AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id        Int              @id @default(autoincrement())
+  type      String           // "STUDENT" or "TEACHER"
+  status    String           // "PRESENT", "ABSENT", "LATE", "ON_LEAVE"
+  date      DateTime         @default(now())
+  remarks   String?
+
+  studentId Int?
+  student   Student?         @relation(fields: [studentId], references: [id])
+  lectureId Int?
+  lecture   Lecture?         @relation(fields: [lectureId], references: [id])
+
+  teacherId Int?
+  teacher   User?            @relation("TeacherAttendance", fields: [teacherId], references: [id])
+}
+
+model Fee {
+  id          Int        @id @default(autoincrement())
+  term        String     
+  amountDue   Float
+  amountPaid  Float      @default(0.0)
+  status      String     @default("UNPAID") 
+  dueDate     DateTime
+  
+  studentId   Int
+  student     Student    @relation(fields: [studentId], references: [id])
+  
+  createdAt   DateTime   @default(now())
+}
+
+model Budget {
+  id          Int      @id @default(autoincrement())
+  type        String   // "ANNUAL", "DEPARTMENTAL"
+  department  String?  
+  amount      Float
+  spent       Float    @default(0.0)
+  year        Int
+  
+  managerId   Int
+  manager     User     @relation("BudgetManager", fields: [managerId], references: [id])
+}
+
+model MessageLog {
+  id        Int      @id @default(autoincrement())
+  recipient String   
+  content   String
+  type      String   // "SMS", "EMAIL"
+  sentAt    DateTime @default(now())
+  status    String   
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  priority  String   // "High", "Medium", "Low"
+  category  String   // "Event", "Holiday", "Academic"
+  date      DateTime @default(now())
+}
+
+model LibraryBook {
+  id          Int      @id @default(autoincrement())
+  title       String
+  author      String
+  category    String
+  isbn        String?
+  available   Boolean  @default(true)
+  borrowedBy  String?
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  title     String
+  subject   String
+  date      DateTime
+  duration  String
+  room      String
+}
+
+model TransportRoute {
+  id          Int      @id @default(autoincrement())
+  routeName   String
+  vehicleNo   String
+  driverName  String
+  driverPhone String
+}
+
+model Hostel {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   // "Boys", "Girls"
+  capacity    Int
+  available   Int
+}
+
+
